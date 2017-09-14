@@ -1,0 +1,13 @@
+---
+
+# Default values
+
+lxc_container_os: "17.04/amd64"
+lxc_container_source: "https://cloud-images.ubuntu.com/releases"
+
+
+lxd_cpu_allowance: 20
+lxd_cpu_priority: 0
+lxd_memory_limit: "4GB"
+lxd_memory_swap: "true"
+lxd_memory_enforcement: "hard"

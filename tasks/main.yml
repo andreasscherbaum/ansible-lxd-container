@@ -1,0 +1,111 @@
+---
+
+# Create container
+
+
+- name: Create LXD Container
+  become: True
+  lxd_container:
+    name: "{{ lxd_name }}"
+    state: started
+    source:
+      type: image
+      mode: pull
+      server: "{{ lxc_container_source }}"
+      protocol: simplestreams
+      alias: "{{ lxc_container_os }}"
+      #server: https://images.linuxcontainers.org
+      #alias: ubuntu/yakkety/amd64
+      #protocol: lxd
+    profiles: ['default']
+    wait_for_ipv4_addresses: true
+    timeout: 600
+  register: container_setup
+  delegate_to: "{{ ansible_host }}"
+  delegate_facts: True
+
+
+- block:
+
+  - name: Container created
+    debug: msg="Container{{':'}} {{ lxd_name }}"
+
+
+  - name: Container IPv4 address
+    shell: lxc exec "{{ lxd_name }}" -- ip -o -4 addr show eth0 | awk '{print $4}' | cut -d/ -f1
+    register: container_ip4_address
+    changed_when: false
+
+
+  - name: Container IPv6 address
+    shell: lxc exec "{{ lxd_name }}" -- ip -o -6 addr show eth0 | grep " forever " | awk '{print $4}' | cut -d/ -f1
+    register: container_ip6_address
+    changed_when: false
+
+
+  - name: Show Container IP address
+    debug: msg="{{ lxd_name }}{{':'}} {{ container_ip4_address.stdout }} + {{ container_ip6_address.stdout }}"
+    changed_when: false
+
+
+  - name: OpenSSH
+    shell: lxc exec "{{ lxd_name }}" --env DEBIAN_FRONTEND=noninteractive -- apt-get -y install -y openssh-client openssh-server openssh-sftp-server
+
+  - name: OpenSSH create .ssh directory
+    shell: lxc exec "{{ lxd_name }}" -- mkdir -p /root/.ssh
+
+  - name: OpenSSH permissions of .ssh directory
+    shell: lxc exec "{{ lxd_name }}" -- chmod 0700 /root/.ssh
+
+  - name: OpenSSH authorized_keys
+    shell: lxc file push /root/.ssh/id_rsa.pub "{{ lxd_name }}"/root/.ssh/authorized_keys
+
+  - name: Create /root/.ssh/known_hosts
+    file: path=/root/.ssh/known_hosts state=touch
+    changed_when: false
+
+  - name: Remove container name from known_hosts
+    shell: ssh-keygen -R "{{ lxd_name }}" -f /root/.ssh/known_hosts
+
+  - name: Remove container IP from known_hosts
+    shell: ssh-keygen -R "{{ container_ip4_address.stdout }}" -f /root/.ssh/known_hosts
+
+  - name: Add container to known_hosts
+    shell: ssh-keyscan -4 "{{ lxd_name }}" >> /root/.ssh/known_hosts
+
+  - name: Add container to /etc/hosts
+    lineinfile: dest=/etc/hosts regexp='^{{ container_ip4_address.stdout }}[\t ]' line='{{ container_ip4_address.stdout }}\t{{ lxd_name }}' state=present
+
+
+  # set resource limits
+  # resource settings can be changed live, but Ansible has no option to set them in an idempotent way
+  - name: CPU allowance
+    shell: lxc config set "{{ lxd_name }}" limits.cpu.allowance {{ lxd_cpu_allowance }}%
+
+  - name: CPU priority
+    shell: lxc config set "{{ lxd_name }}" limits.cpu.priority {{ lxd_cpu_priority }}
+
+  - name: Memory limit
+    shell: lxc config set "{{ lxd_name }}" limits.memory {{ lxd_memory_limit }}
+
+  - name: Swap
+    shell: lxc config set "{{ lxd_name }}" limits.memory.swap {{ lxd_memory_swap }}
+
+  - name: Memory limit enforcement
+    shell: lxc config set "{{ lxd_name }}" limits.memory.enforce {{ lxd_memory_enforcement }}
+
+  - name: apt-get update
+    shell: lxc exec "{{ lxd_name }}" --env DEBIAN_FRONTEND=noninteractive -- apt-get update
+
+  - name: apt-get dist-upgrade
+    shell: lxc exec "{{ lxd_name }}" --env DEBIAN_FRONTEND=noninteractive -- apt-get dist-upgrade -y
+
+  - name: Python2
+    shell: lxc exec "{{ lxd_name }}" --env DEBIAN_FRONTEND=noninteractive -- apt-get -y install -y python
+
+  when: container_setup.changed
+  delegate_to: "{{ ansible_host }}"
+
+
+
+
