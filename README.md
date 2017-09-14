@@ -1,6 +1,6 @@
-# ansible-lxc
+# ansible-lxd
 
-Ansible role for creating LXC containers
+Ansible role for creating LXD containers
 
 ## Main usage
 
