@@ -1,4 +1,4 @@
 
 
-ansible-update-lxd:
-	cd roles/lxd && git pull
+ansible-update-lxd-container:
+	cd roles/lxd-container && git pull
