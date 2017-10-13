@@ -1,4 +1,4 @@
-# ansible-lxd
+# ansible-lxd-container
 
 Ansible role for creating LXD containers
 
