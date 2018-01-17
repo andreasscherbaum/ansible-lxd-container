@@ -48,6 +48,19 @@
     changed_when: false
 
 
+  - name: Remove old container from /etc/hosts
+    lineinfile:
+      dest: /etc/hosts
+      regexp: "{{ item.regexp }}"
+      state: absent
+    with_items:
+      - { regexp: '^.+\t{{ lxd_name }}' }
+      - { regexp: '^.+\t{{ lxd_name }}' }
+      - { regexp: '^.+\t{{ lxd_name }}' }
+
+  - name: Add container to /etc/hosts
+    lineinfile: dest=/etc/hosts regexp='^{{ container_ip4_address.stdout }}[\t ]' line='{{ container_ip4_address.stdout }}\t{{ lxd_name }}' state=present
+
   - name: OpenSSH
     shell: lxc exec "{{ lxd_name }}" --env DEBIAN_FRONTEND=noninteractive -- apt-get -y install -y openssh-client openssh-server openssh-sftp-server
 
@@ -72,19 +85,6 @@
 
   - name: Add container to known_hosts
     shell: ssh-keyscan -4 "{{ lxd_name }}" >> /root/.ssh/known_hosts
-
-  - name: Remove old container from /etc/hosts
-    lineinfile:
-      dest: /etc/hosts
-      regexp: "{{ item.regexp }}"
-      state: absent
-    with_items:
-      - { regexp: '^.+\t{{ lxd_name }}' }
-      - { regexp: '^.+\t{{ lxd_name }}' }
-      - { regexp: '^.+\t{{ lxd_name }}' }
-
-  - name: Add container to /etc/hosts
-    lineinfile: dest=/etc/hosts regexp='^{{ container_ip4_address.stdout }}[\t ]' line='{{ container_ip4_address.stdout }}\t{{ lxd_name }}' state=present
 
 
   # set resource limits
