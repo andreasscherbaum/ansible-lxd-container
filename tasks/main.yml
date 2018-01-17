@@ -38,7 +38,7 @@
 
 
   - name: Container IPv6 address
-    shell: lxc exec "{{ lxd_name }}" -- ip -o -6 addr show eth0 | grep " forever " | awk '{print $4}' | cut -d/ -f1
+    shell: lxc exec "{{ lxd_name }}" -- ip -o -6 addr show eth0 | grep " forever " | grep -v " scope link " | awk '{print $4}' | cut -d/ -f1
     register: container_ip6_address
     changed_when: false
 
