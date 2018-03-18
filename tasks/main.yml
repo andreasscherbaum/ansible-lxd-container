@@ -31,14 +31,20 @@
     debug: msg="Container{{':'}} {{ lxd_name }}"
 
 
+  - name: Container interface name
+    shell: lxc exec "{{ lxd_name }}" -- ip -4 -o link show | awk '{print $2}' | cut -f1 -d':' | cut -f1 -d'@' | grep '^e[tn]'
+    register: container_interface_name
+    changed_when: false
+
+
   - name: Container IPv4 address
-    shell: lxc exec "{{ lxd_name }}" -- ip -o -4 addr show eth0 | awk '{print $4}' | cut -d/ -f1
+    shell: lxc exec "{{ lxd_name }}" -- ip -o -4 addr show "{{ container_interface_name }}" | awk '{print $4}' | cut -d/ -f1
     register: container_ip4_address
     changed_when: false
 
 
   - name: Container IPv6 address
-    shell: lxc exec "{{ lxd_name }}" -- ip -o -6 addr show eth0 | grep " forever " | grep -v " scope link " | awk '{print $4}' | cut -d/ -f1
+    shell: lxc exec "{{ lxd_name }}" -- ip -o -6 addr show "{{ container_interface_name }}" | grep " forever " | grep -v " scope link " | awk '{print $4}' | cut -d/ -f1
     register: container_ip6_address
     changed_when: false
 
