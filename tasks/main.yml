@@ -38,13 +38,13 @@
 
 
   - name: Container IPv4 address
-    shell: lxc exec "{{ lxd_name }}" -- ip -o -4 addr show "{{ container_interface_name }}" | awk '{print $4}' | cut -d/ -f1
+    shell: lxc exec "{{ lxd_name }}" -- ip -o -4 addr show "{{ container_interface_name.stdout }}" | awk '{print $4}' | cut -d/ -f1
     register: container_ip4_address
     changed_when: false
 
 
   - name: Container IPv6 address
-    shell: lxc exec "{{ lxd_name }}" -- ip -o -6 addr show "{{ container_interface_name }}" | grep " forever " | grep -v " scope link " | awk '{print $4}' | cut -d/ -f1
+    shell: lxc exec "{{ lxd_name }}" -- ip -o -6 addr show "{{ container_interface_name.stdout }}" | grep " forever " | grep -v " scope link " | awk '{print $4}' | cut -d/ -f1
     register: container_ip6_address
     changed_when: false
 
