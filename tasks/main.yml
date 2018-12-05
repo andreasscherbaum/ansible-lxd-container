@@ -49,6 +49,11 @@
     changed_when: false
 
 
+  - name: Check that IPv4 address is set
+    fail: msg="IPv4 address for container is not available"
+    when: container_ip4_address.stdout|length|int < 6
+
+
   - name: Show Container IP address
     debug: msg="{{ lxd_name }}{{':'}} {{ container_ip4_address.stdout }} + {{ container_ip6_address.stdout }}"
     changed_when: false
